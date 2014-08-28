@@ -1,10 +1,16 @@
 import java.awt.BorderLayout;
 import java.awt.GridLayout;
+import java.awt.Rectangle;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
 import java.util.Hashtable;
 
 import javax.swing.JApplet;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -13,7 +19,8 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 public class WeatherApplication extends JApplet {
-	JButton testButton = new JButton("Text");
+	JButton stateButton = new JButton("Select State");
+	JButton cityButton = new JButton("Select City");
 	JSlider xHoursSlider = new JSlider(1, 7);
 	JSlider xDaysSlider = new JSlider(1, 4);
 	JSlider rainOrSnowOrIceSlider = new JSlider(1, 3);
@@ -28,12 +35,22 @@ public class WeatherApplication extends JApplet {
     GraphJPanel graphIceJPanel = new GraphJPanel();
     
 	JPanel centerPanel = new JPanel();
+	JPanel northPanel = new JPanel();
     
     boolean rain = true;
     boolean snow = false;
     boolean ice = false;
+    String[] states = {"AK","AL","AR","AS","AZ","CA","CO","CT","DC","DE","FL","GA","GU","HI","IA","ID",
+    					"IL","IN","KS","KY","LA","MA","MD","ME","MH","MI","MN","MO","MS","MT","NC","ND",
+    					"NE","NH","NJ","NM","NV","NY","OH","OK","OR","PA","PR","PW","RI","SC","SD","TN",
+    					"TX","UT","VA","VI","VT","WA","WI","WV","WY"};
+    ArrayList<String> cities = new ArrayList<String>();
+	JComboBox<String> stateComboBox = new JComboBox<String>(states);
+	JComboBox<String> cityComboBox = new JComboBox<String>();
     
     WebScraper webScraper = new WebScraper();
+    ProgressBar webScrapProgressBar = webScraper.getProgressBar();
+    int progress = 0;
 	
 	public static void main(String[] args) {
 		JFrame f = new JFrame("Graph Temperatures");
@@ -47,6 +64,50 @@ public class WeatherApplication extends JApplet {
         
 	}
     public void makeGui() {
+
+    	northPanel.add(stateComboBox);
+    	northPanel.add(stateButton);
+    	northPanel.add(cityComboBox);
+    	northPanel.add(cityButton);
+    	northPanel.add(webScrapProgressBar);
+    	
+    	add(northPanel, BorderLayout.NORTH);
+    	
+    	webScraper.getProgressBar().addPropertyChangeListener(new PropertyChangeListener() {
+    			public void propertyChange(PropertyChangeEvent e) {
+    		        webScrapProgressBar.setValue(progress);
+    		        Rectangle progressRect = webScrapProgressBar.getBounds();
+    		        progressRect.x = 0;
+    		        progressRect.y = 0; 
+    		        webScrapProgressBar.paintImmediately(progressRect);
+    				progress++;
+    			}
+    	});
+    	
+    	stateButton.addActionListener(new ActionListener() {
+             public void actionPerformed(ActionEvent e) {
+            	 cityComboBox.removeAllItems();
+            	 cities.clear();
+                 webScraper.setState(stateComboBox.getSelectedItem().toString().toLowerCase());
+                 webScraper.webScrapState();
+                 cities.addAll(webScraper.getStateCityAndLink().keySet());
+                 for (int i = 0; i < cities.size(); i++) {
+                     cityComboBox.addItem(cities.get(i));
+                 }
+                 cityComboBox.updateUI();
+             }
+         });    
+    	 
+    	 cityButton.addActionListener(new ActionListener() {
+             public void actionPerformed(ActionEvent e) {
+            	 progress = 0;
+                 webScraper.setCity(cityComboBox.getSelectedItem().toString());
+                 webScraper.webScrapCity();
+                 graphTemperaturesJPanel.setGraphPoints(webScraper.getTemperatures());
+                 graphTemperaturesJPanel.run();
+                 repaint();
+             }
+         });  
         
         //Table for JSlider Labels
         Hashtable<Integer, JLabel> labelTable = new Hashtable<Integer, JLabel>();
@@ -138,7 +199,6 @@ public class WeatherApplication extends JApplet {
        	      public void stateChanged(ChangeEvent e) {
        	    	  //
        	    	  if (rainOrSnowOrIceSlider.getValue() == 1) {
-       	    		  //System.out.println("Rain");
        	    		  rain = true;
        	    		  snow = false;
        	    		  ice = false;
@@ -146,14 +206,12 @@ public class WeatherApplication extends JApplet {
        	    	  }
        	    	  //
        	    	  else if (rainOrSnowOrIceSlider.getValue() == 2) {
-       	    		  //System.out.println("Snow");
        	    		  rain = false;
      	    		  snow = true;
      	    		  ice = false;
        	    	  }
        	    	  //
        	    	  else if (rainOrSnowOrIceSlider.getValue() == 3) {
-       	    		  //System.out.println("Ice");
        	    		  rain = false;
      	    		  snow = false;
      	    		  ice = true;
