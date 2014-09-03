@@ -14,8 +14,11 @@ import javax.swing.JPanel;
 
 
 public class GraphJPanel extends JPanel implements Runnable {
+	Calendar cal = Calendar.getInstance();
+	SimpleDateFormat sdf = new SimpleDateFormat("HH");
 	
-	ArrayList<Integer> graphPoints = new ArrayList<Integer>();
+	JLabel titleLabel = new JLabel("Blank");
+	
 	int min;
 	int max;
 	double heightScaler;
@@ -25,10 +28,8 @@ public class GraphJPanel extends JPanel implements Runnable {
 	int verticalLinesEveryXHours = 6;
 	int yAxisIncrements = 5;
 	int numberOfDaysDisplayed = 4; // Number between 1-4
-	JLabel titleLabel = new JLabel("Blank");
+	ArrayList<Integer> graphPoints = new ArrayList<Integer>();
 	ArrayList<Integer> drawVerticalLines = new ArrayList<Integer>();
-	Calendar cal = Calendar.getInstance();
-	SimpleDateFormat sdf = new SimpleDateFormat("HH");
 
 	public void run() {
 		MyJPanel mjp = new MyJPanel();
@@ -36,7 +37,7 @@ public class GraphJPanel extends JPanel implements Runnable {
 		titleLabel.setHorizontalAlignment(JLabel.CENTER);
 		add(titleLabel, BorderLayout.NORTH);
 		add(mjp, BorderLayout.CENTER);
-    	cal.getTime();	
+    	cal.getTime();
 	}
 	public class MyJPanel extends JPanel {
 		public void paintComponent(Graphics g) {
@@ -74,7 +75,7 @@ public class GraphJPanel extends JPanel implements Runnable {
 					}
 				}
 			}
-			//vertical lines 1,2,3,4,6,12
+			//vertical lines = 1,2,3,4,6,12
 			else {
 				for (int i = 0; i < graphPoints.size(); i++) {
 					//to show the current time as a vertical line
@@ -96,6 +97,8 @@ public class GraphJPanel extends JPanel implements Runnable {
 			heightScaler(this.getHeight());
 			widthScaler(this.getWidth(), tempSubList);
 	
+			boolean noonMidnightToggle = false;
+			
 			for (int i = 0; i < tempSubList.size() - 1; i++) {
 	
 				// Add a vertical line every X hours
@@ -127,9 +130,9 @@ public class GraphJPanel extends JPanel implements Runnable {
 					if (i % 12 == 0) {
 						// Draw am/pm below the number for every vertical line to
 						// match the hours
-						String amOrPm = amPmCalculator(i);
+						boolean amOrPm = amPmCalculator(i);
 	
-						if (amOrPm.equals("a")) {
+						if (amOrPm) {
 							Color myColor = new Color(0, 0, 255, 64);
 							g.setColor(myColor);
 							g2.fillRect(xCoordinate, yCoordinate,
@@ -153,8 +156,17 @@ public class GraphJPanel extends JPanel implements Runnable {
 					g2.setColor(Color.BLACK);
 					// Draw a number for every vertical line to match the hours
 					if (i % 24 % 12 == 0) {
-						g2.drawString(12 + "", xCoordinate - 3, (int) (getHeight()
-								- getHeight() * ySpacingPercentage + 15));
+						if (noonMidnightToggle) {
+							g2.drawString("N", xCoordinate - 3, (int) (getHeight()
+									- getHeight() * ySpacingPercentage + 15));
+							noonMidnightToggle = false;
+						}
+						else {
+							g2.drawString("M", xCoordinate - 3, (int) (getHeight()
+									- getHeight() * ySpacingPercentage + 15));
+							noonMidnightToggle = true;
+						}
+						
 					} else {
 						g2.drawString(i % 24 % 12 + "", xCoordinate - 3,
 								(int) (getHeight() - getHeight()
@@ -163,8 +175,8 @@ public class GraphJPanel extends JPanel implements Runnable {
 	
 					// Draw am/pm below the number for every vertical line to match
 					// the hours
-					String amOrPm = amPmCalculator(i);
-					if (amOrPm.equals("a")) {
+					boolean amOrPm = amPmCalculator(i);
+					if (amOrPm) {
 						Color myColor = new Color(0, 0, 255, 64);
 						g.setColor(myColor);
 						g2.fillRect(
@@ -211,70 +223,72 @@ public class GraphJPanel extends JPanel implements Runnable {
 			g.drawString(min + "", tempXPosition, (int) (getHeight() - getHeight()
 					* ySpacingPercentage + 5));
 	
-			// Other Temps
-			// Figure out pixels/temp ratio
-			int graphHeightInPixels = y2Coordinate - yCoordinate;
-			int tempDifference = max - min;
-			double pixelPerTempRatio = 1.0 * graphHeightInPixels / tempDifference;
-	
-			int drawTemp = 0;
-			for (int i = 0; i < (max - min) / 5 + 1; i++) {
-				g2.setColor(Color.BLACK);
-				drawTemp = min + i * yAxisIncrements;
-				// System.out.println("E: " + drawTemp);
-	
-				// Convert drawTemp into a number divisible by 5
-				if (drawTemp % yAxisIncrements > 3) {
-					drawTemp = yAxisIncrements - drawTemp % yAxisIncrements + drawTemp;
-					// System.out.println("D: " + drawTemp);
-				} else {
-					drawTemp = yAxisIncrements - drawTemp % yAxisIncrements + drawTemp;
-					// System.out.println("Test:" + drawTemp);
-				}
-	
-				// Draw the temperatures that are divisible by 5 AND more than 3
-				// degrees from max/min temperatures
-				if (max - drawTemp >= 3 && drawTemp - min >= 3) {
-					int yHeight = (int) ((getHeight() * ySpacingPercentage) + (max - drawTemp)
-							* pixelPerTempRatio);
-	
-					// Draw Temperatures for the Y Axis
-					// For spacing purposes based on number of digits
-					// 10 to 99
-					if (drawTemp < 100 && drawTemp >= 10) {
-						g2.drawString("  " + drawTemp, tempXPosition, yHeight);
+			if (!graphPoints.isEmpty()) {
+				// Other Temps
+				// Figure out pixels/temp ratio
+				int graphHeightInPixels = y2Coordinate - yCoordinate;
+				int tempDifference = max - min;
+				double pixelPerTempRatio = 1.0 * graphHeightInPixels / tempDifference;
+		
+				int drawTemp = 0;
+				for (int i = 0; i < (max - min) / 5 + 1; i++) {
+					g2.setColor(Color.BLACK);
+					drawTemp = min + i * yAxisIncrements;
+					// System.out.println("E: " + drawTemp);
+		
+					// Convert drawTemp into a number divisible by 5
+					if (drawTemp % yAxisIncrements > 3) {
+						drawTemp = yAxisIncrements - drawTemp % yAxisIncrements + drawTemp;
+						// System.out.println("D: " + drawTemp);
+					} else {
+						drawTemp = yAxisIncrements - drawTemp % yAxisIncrements + drawTemp;
+						// System.out.println("Test:" + drawTemp);
 					}
-					// -99 to -10
-					else if (drawTemp > -100 && drawTemp <= -10) {
-						g2.drawString(" " + drawTemp, tempXPosition, yHeight);
+		
+					// Draw the temperatures that are divisible by 5 AND more than 3
+					// degrees from max/min temperatures
+					if (max - drawTemp >= 3 && drawTemp - min >= 3) {
+						int yHeight = (int) ((getHeight() * ySpacingPercentage) + (max - drawTemp)
+								* pixelPerTempRatio);
+		
+						// Draw Temperatures for the Y Axis
+						// For spacing purposes based on number of digits
+						// 10 to 99
+						if (drawTemp < 100 && drawTemp >= 10) {
+							g2.drawString("  " + drawTemp, tempXPosition, yHeight);
+						}
+						// -99 to -10
+						else if (drawTemp > -100 && drawTemp <= -10) {
+							g2.drawString(" " + drawTemp, tempXPosition, yHeight);
+						}
+						// 0 to 9
+						else if (drawTemp >= 0 && drawTemp < 10) {
+							g2.drawString("    " + drawTemp, tempXPosition + 1, yHeight);
+						}
+						// -9 to -1
+						else if (drawTemp > -10 && drawTemp < 0) {
+							g2.drawString("   " + drawTemp, tempXPosition, yHeight);
+						}
+						// 100 to 999
+						else if (drawTemp >= 100 && drawTemp < 1000) {
+							g2.drawString("" + drawTemp, tempXPosition - 1, yHeight);
+						}
+						// -999 to 100
+						else if (drawTemp <= -100 && drawTemp > -1000) {
+							g2.drawString("" + drawTemp, tempXPosition - 4, yHeight);
+						}
+						// 1000+ or -1000 below
+						else {
+							g2.drawString("" + drawTemp, tempXPosition - 50, yHeight);
+						}
+		
+						// Draw Horizontal Lines corresponding to the temperatures
+						g2.setColor(Color.GRAY);
+						g2.draw(new Line2D.Float(
+								(int) (getWidth() * xSpacingPercentage), yHeight,
+								(int) (getWidth() - getWidth() * xSpacingPercentage),
+								yHeight));
 					}
-					// 0 to 9
-					else if (drawTemp >= 0 && drawTemp < 10) {
-						g2.drawString("    " + drawTemp, tempXPosition + 1, yHeight);
-					}
-					// -9 to -1
-					else if (drawTemp > -10 && drawTemp < 0) {
-						g2.drawString("   " + drawTemp, tempXPosition, yHeight);
-					}
-					// 100 to 999
-					else if (drawTemp >= 100 && drawTemp < 1000) {
-						g2.drawString("" + drawTemp, tempXPosition - 1, yHeight);
-					}
-					// -999 to 100
-					else if (drawTemp <= -100 && drawTemp > -1000) {
-						g2.drawString("" + drawTemp, tempXPosition - 4, yHeight);
-					}
-					// 1000+ or -1000 below
-					else {
-						g2.drawString("" + drawTemp, tempXPosition - 50, yHeight);
-					}
-	
-					// Draw Horizontal Lines corresponding to the temperatures
-					g2.setColor(Color.GRAY);
-					g2.draw(new Line2D.Float(
-							(int) (getWidth() * xSpacingPercentage), yHeight,
-							(int) (getWidth() - getWidth() * xSpacingPercentage),
-							yHeight));
 				}
 			}
 			for (int i = 0; i < tempSubList.size() - 1; i++) {
@@ -359,14 +373,13 @@ public class GraphJPanel extends JPanel implements Runnable {
 	}
 
 	// Calculates if the hour is am or pm
-	// Not efficient to use strings but was repurposed
-	// **improve
-	public String amPmCalculator(int hour) {
+	//am = true, pm = false
+	public boolean amPmCalculator(int hour) {
 		int dailyHour = hour % 24;
 		if (dailyHour < 12) {
-			return "a";
+			return true;
 		} else {
-			return "p";
+			return false;
 		}
 	}
 

@@ -10,6 +10,12 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 
 public class WebScraper {
+	//set to true means this class does no webscraping and instead uses test values to quicker testing
+	//set to false for webscraping but slower startup
+	boolean isTest = false;
+	
+	ProgressBar webScrapProgressBar = new ProgressBar();
+	
 	ArrayList<Integer> hourlyTemperatures = new ArrayList<Integer>();
 	ArrayList<Integer> hourlyRainPercentages = new ArrayList<Integer>();
 	ArrayList<Integer> hourlyHumidityPercentages = new ArrayList<Integer>();
@@ -17,15 +23,16 @@ public class WebScraper {
 	ArrayList<Integer> hourlyIcePercentages = new ArrayList<Integer>();
 	ArrayList<String> parsedCities = new ArrayList<String>();
 	LinkedHashMap<String, String> stateCityAndLink = new LinkedHashMap<String, String>();
+	
 	String stateAndCity = "brunswick-ga";
 	String state = "ga";
 	String city = "brunswick";
-	ProgressBar webScrapProgressBar = new ProgressBar();
 	int progress = 0;
-	
-	//set to true means this class does no webscraping and instead uses test values to quicker testing
-	//set to false for webscraping but slower startup
-	boolean isTest = false;
+	int temperatureErrorCounter = 1;
+	int humidityErrorCounter = 1;
+	int rainErrorCounter = 1;
+	int snowErrorCounter = 1;
+	int iceErrorCounter = 1;
 
 	public String getState() {
 		return state;
@@ -368,7 +375,18 @@ public class WebScraper {
 			}
 		}
 		//Return temperatures
-		hourlyTemperatures.add(Integer.parseInt(input.substring(lessThanPlaceholder, ampersandPlaceholder)));
+		int temp = Integer.parseInt(input.substring(lessThanPlaceholder, ampersandPlaceholder));
+		//If temp is 0 and arrayList is empty then increase error counter
+		if (temp == 0 && hourlyTemperatures.size() == 0) {
+			temperatureErrorCounter++;
+		}
+		else {
+			//Loop to fix repeated 0 errors at the start of parsing
+			for (int i = 0; i < temperatureErrorCounter; i++) {
+				hourlyTemperatures.add(temp);
+			}
+			temperatureErrorCounter = 1;
+		}
 	}
 	
 	public void humidityParser(String input) {
@@ -393,7 +411,18 @@ public class WebScraper {
 		}
 		//Return Humidity percentages
 		if (input.substring(colonPlaceholder, percentagePlaceholder).compareTo("") != 0) {
-			hourlyHumidityPercentages.add(Integer.parseInt(input.substring(colonPlaceholder, percentagePlaceholder)));
+			int temp = Integer.parseInt(input.substring(colonPlaceholder, percentagePlaceholder));
+			//If temp is 0 and arrayList is empty then increase error counter
+			if (temp == 0 && hourlyHumidityPercentages.size() == 0) {
+				humidityErrorCounter++;
+			}
+			else {
+				//Loop to fix repeated 0 errors at the start of parsing
+				for (int i = 0; i < humidityErrorCounter; i++) {
+					hourlyHumidityPercentages.add(temp);
+				}
+				humidityErrorCounter = 1;
+			}
 		}
 	}
 	public void rainParser(String input) {
@@ -418,7 +447,25 @@ public class WebScraper {
 		}
 		//Return Rain Percentages
 		if (input.substring(colonPlaceholder, percentagePlaceholder).compareTo("") != 0) {
-			hourlyRainPercentages.add(Integer.parseInt(input.substring(colonPlaceholder, percentagePlaceholder)));
+			int temp = Integer.parseInt(input.substring(colonPlaceholder, percentagePlaceholder));
+			//If temp is 0 and arrayList is empty then increase error counter
+			if (rainErrorCounter == 96) {
+				//Loop to fix repeated 0 errors at the start of parsing
+				for (int i = 0; i < rainErrorCounter; i++) {
+					hourlyRainPercentages.add(temp);
+				}
+				rainErrorCounter = 1;
+			}
+			else if (temp == 0 && hourlyRainPercentages.size() == 0) {
+				rainErrorCounter++;
+			}
+			else {
+				//Loop to fix repeated 0 errors at the start of parsing
+				for (int i = 0; i < rainErrorCounter; i++) {
+					hourlyRainPercentages.add(temp);
+				}
+				rainErrorCounter = 1;
+			}
 		}
 	}
 	public void snowParser(String input) {
@@ -443,7 +490,26 @@ public class WebScraper {
 		}
 		//Return Snow Percentages
 		if (input.substring(colonPlaceholder, percentagePlaceholder).compareTo("") != 0) {
-			hourlySnowPercentages.add(Integer.parseInt(input.substring(colonPlaceholder, percentagePlaceholder)));
+			
+			int temp = Integer.parseInt(input.substring(colonPlaceholder, percentagePlaceholder));
+			//If temp is 0 and arrayList is empty then increase error counter
+			 if (snowErrorCounter == 96) {
+				//Loop to fix repeated 0 errors at the start of parsing
+				for (int i = 0; i < snowErrorCounter; i++) {
+					hourlySnowPercentages.add(0);
+				}
+				snowErrorCounter = 1;
+			}
+			else if (temp == 0 && hourlySnowPercentages.size() == 0) {
+				snowErrorCounter++;
+			}
+			else {
+				//Loop to fix repeated 0 errors at the start of parsing
+				for (int i = 0; i < snowErrorCounter; i++) {
+					 hourlySnowPercentages.add(temp);
+				}
+				snowErrorCounter = 1;
+			} 
 		}
 	}
 	public void iceParser(String input) {
@@ -468,7 +534,25 @@ public class WebScraper {
 		}
 		//Return Ice Percentages
 		if (input.substring(colonPlaceholder, percentagePlaceholder).compareTo("") != 0) {
-			hourlyIcePercentages.add(Integer.parseInt(input.substring(colonPlaceholder, percentagePlaceholder)));
+			int temp = Integer.parseInt(input.substring(colonPlaceholder, percentagePlaceholder));
+			//If temp is 0 and arrayList is empty then increase error counter
+			 if (iceErrorCounter == 96) {
+				//Loop to fix repeated 0 errors at the start of parsing
+				for (int i = 0; i < iceErrorCounter; i++) {
+					hourlyIcePercentages.add(0);
+				}
+				iceErrorCounter = 1;
+			}
+			else if (temp == 0 && hourlyIcePercentages.size() == 0) {
+				iceErrorCounter++;
+			}
+			else {
+				//Loop to fix repeated 0 errors at the start of parsing
+				for (int i = 0; i < iceErrorCounter; i++) {
+					 hourlyIcePercentages.add(temp);
+				}
+				iceErrorCounter = 1;
+			} 
 		}
 	}
 }

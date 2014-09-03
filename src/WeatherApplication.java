@@ -19,14 +19,21 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 public class WeatherApplication extends JApplet {
+    WebScraper webScraper = new WebScraper();
+    ProgressBar webScrapProgressBar = webScraper.getProgressBar();
+    
 	JButton stateButton = new JButton("Select State");
 	JButton cityButton = new JButton("Select City");
+	
 	JSlider xHoursSlider = new JSlider(1, 7);
 	JSlider xDaysSlider = new JSlider(1, 4);
 	JSlider rainOrSnowOrIceSlider = new JSlider(1, 3);
+	
     JLabel xHoursSliderLabel = new JLabel("Hourly Divisor", JLabel.CENTER);
     JLabel xDaysSliderLabel = new JLabel("Number of Days", JLabel.CENTER);
     JLabel rainOrSnowOrIceSliderLabel = new JLabel("Rain or Snow or Ice", JLabel.CENTER);
+    JLabel redBlueTooltip = new JLabel("What does the Blue/Red mean?");
+    JLabel noonMidnightTooltip = new JLabel("M/N? (Hover)");
 
     GraphJPanel graphTemperaturesJPanel = new GraphJPanel();  
     GraphJPanel graphHumiditiesJPanel = new GraphJPanel();
@@ -34,26 +41,24 @@ public class WeatherApplication extends JApplet {
     GraphJPanel graphSnowJPanel = new GraphJPanel(); 
     GraphJPanel graphIceJPanel = new GraphJPanel();
     
-	JPanel centerPanel = new JPanel();
 	JPanel northPanel = new JPanel();
-    
+	JPanel centerPanel = new JPanel();
+   	JPanel southPanel = new JPanel();
+
+    int progress = 0;
     boolean rain = true;
     boolean snow = false;
     boolean ice = false;
-    String[] states = {"AK","AL","AR","AS","AZ","CA","CO","CT","DC","DE","FL","GA","GU","HI","IA","ID",
-    					"IL","IN","KS","KY","LA","MA","MD","ME","MH","MI","MN","MO","MS","MT","NC","ND",
-    					"NE","NH","NJ","NM","NV","NY","OH","OK","OR","PA","PR","PW","RI","SC","SD","TN",
-    					"TX","UT","VA","VI","VT","WA","WI","WV","WY"};
+    String[] states = {"AK","AL","AR","AZ","CA","CO","CT","DC","DE","FL","GA","HI","IA","ID",
+			"IL","IN","KS","KY","LA","MA","MD","ME","MI","MN","MO","MS","MT","NC","ND",
+			"NE","NH","NJ","NM","NV","NY","OH","OK","OR","PA","RI","SC","SD","TN",
+			"TX","UT","VA","VT","WA","WI","WV","WY"};
     ArrayList<String> cities = new ArrayList<String>();
 	JComboBox<String> stateComboBox = new JComboBox<String>(states);
 	JComboBox<String> cityComboBox = new JComboBox<String>();
-    
-    WebScraper webScraper = new WebScraper();
-    ProgressBar webScrapProgressBar = webScraper.getProgressBar();
-    int progress = 0;
 	
 	public static void main(String[] args) {
-		JFrame f = new JFrame("Graph Temperatures");
+		JFrame f = new JFrame("US Weather Application");
         JApplet a = new WeatherApplication();
         f.getContentPane().add(a);
         a.init();
@@ -65,13 +70,63 @@ public class WeatherApplication extends JApplet {
 	}
     public void makeGui() {
 
+        Hashtable<Integer, JLabel> labelTable = new Hashtable<Integer, JLabel>();
+       	Hashtable<Integer, JLabel> rainOrSnowOrIceLabels = new Hashtable<Integer, JLabel>();
+       	
+    	add(northPanel, BorderLayout.NORTH);
+        add(getGraphs(), BorderLayout.CENTER);
+       	add(southPanel, BorderLayout.SOUTH);
+       	
+       	//North Panel with city selection
     	northPanel.add(stateComboBox);
     	northPanel.add(stateButton);
     	northPanel.add(cityComboBox);
     	northPanel.add(cityButton);
     	northPanel.add(webScrapProgressBar);
+    	northPanel.add(redBlueTooltip);
+    	northPanel.add(noonMidnightTooltip);
+       	
+       	//South Panel settings
+       	southPanel.setLayout(new GridLayout(2,3));
+       	southPanel.add(xHoursSliderLabel);
+       	southPanel.add(xDaysSliderLabel);
+       	southPanel.add(rainOrSnowOrIceSliderLabel);
+       	southPanel.add(xHoursSlider);
+       	southPanel.add(xDaysSlider);
+       	southPanel.add(rainOrSnowOrIceSlider);
     	
-    	add(northPanel, BorderLayout.NORTH);
+       	//Tooltip Text
+    	redBlueTooltip.setToolTipText("Blue = a.m., Red = p.m.");
+    	noonMidnightTooltip.setToolTipText("M = Midnight, N = Noon");
+    	
+        //Table for JSlider Labels
+        labelTable.put(new Integer(1), new JLabel("1"));
+       	labelTable.put(new Integer(2), new JLabel("2"));
+       	labelTable.put(new Integer(3), new JLabel("3"));
+       	labelTable.put(new Integer(4), new JLabel("4"));
+       	labelTable.put(new Integer(5), new JLabel("6"));
+       	labelTable.put(new Integer(6), new JLabel("12"));
+       	labelTable.put(new Integer(7), new JLabel("None"));
+       	
+       	//Table for Rain or Snow or Ice Slider
+        rainOrSnowOrIceLabels.put(new Integer(1), new JLabel("Rain"));
+       	rainOrSnowOrIceLabels.put(new Integer(2), new JLabel("Snow"));
+       	rainOrSnowOrIceLabels.put(new Integer(3), new JLabel("Ice"));
+       	
+       	//Hourly Slider Settings
+       	xHoursSlider.setLabelTable(labelTable);
+       	xHoursSlider.setPaintLabels(true);
+       	xHoursSlider.setValue(5);
+       	
+       	//Daily Slider Settings
+       	xDaysSlider.setLabelTable(labelTable);
+       	xDaysSlider.setPaintLabels(true);
+       	xDaysSlider.setValue(4);   	
+       	
+       	//Hourly Slider Settings
+       	rainOrSnowOrIceSlider.setLabelTable(rainOrSnowOrIceLabels);
+       	rainOrSnowOrIceSlider.setPaintLabels(true);
+       	rainOrSnowOrIceSlider.setValue(1);
     	
     	webScraper.getProgressBar().addPropertyChangeListener(new PropertyChangeListener() {
     			public void propertyChange(PropertyChangeEvent e) {
@@ -104,28 +159,10 @@ public class WeatherApplication extends JApplet {
                  webScraper.setCity(cityComboBox.getSelectedItem().toString());
                  webScraper.webScrapCity();
                  graphTemperaturesJPanel.setGraphPoints(webScraper.getTemperatures());
-                 graphTemperaturesJPanel.run();
                  repaint();
              }
          });  
-        
-        //Table for JSlider Labels
-        Hashtable<Integer, JLabel> labelTable = new Hashtable<Integer, JLabel>();
-        labelTable.put(new Integer(1), new JLabel("1"));
-       	labelTable.put(new Integer(2), new JLabel("2"));
-       	labelTable.put(new Integer(3), new JLabel("3"));
-       	labelTable.put(new Integer(4), new JLabel("4"));
-       	labelTable.put(new Integer(5), new JLabel("6"));
-       	labelTable.put(new Integer(6), new JLabel("12"));
-       	labelTable.put(new Integer(7), new JLabel("None"));
-       	
-       	//Hourly Slider Settings
-
-       	xHoursSlider.setLabelTable(labelTable);
-       	xHoursSlider.setPaintLabels(true);
-       	xHoursSlider.setValue(5);
-        	
-       	//Hourly Slider Listener
+    	 
        	xHoursSlider.addChangeListener(new ChangeListener() {
        	      public void stateChanged(ChangeEvent e) {
        	    	  //Catch the slider value of 5 and change it to 6 (for hour labels)
@@ -164,13 +201,7 @@ public class WeatherApplication extends JApplet {
        	    	  repaint();
        	      }
        	});
-       	
-    	//Daily Slider Settings
-       	xDaysSlider.setLabelTable(labelTable);
-       	xDaysSlider.setPaintLabels(true);
-
-       	xDaysSlider.setValue(4);
-        	
+    	
        	//Daily Slider Listener
        	xDaysSlider.addChangeListener(new ChangeListener() {
        	      public void stateChanged(ChangeEvent e) {
@@ -183,17 +214,7 @@ public class WeatherApplication extends JApplet {
        	    	  repaint();
        	      }
        	});
-       	
-      	Hashtable<Integer, JLabel> rainOrSnowOrIceLabels = new Hashtable<Integer, JLabel>();
-        rainOrSnowOrIceLabels.put(new Integer(1), new JLabel("Rain"));
-       	rainOrSnowOrIceLabels.put(new Integer(2), new JLabel("Snow"));
-       	rainOrSnowOrIceLabels.put(new Integer(3), new JLabel("Ice"));
-       	
-       	//Hourly Slider Settings
-       	rainOrSnowOrIceSlider.setLabelTable(rainOrSnowOrIceLabels);
-       	rainOrSnowOrIceSlider.setPaintLabels(true);
-       	rainOrSnowOrIceSlider.setValue(1);
-       	
+   	
        	//Rain or Snow or Ice Graph Slider
        	rainOrSnowOrIceSlider.addChangeListener(new ChangeListener() {
        	      public void stateChanged(ChangeEvent e) {
@@ -220,31 +241,11 @@ public class WeatherApplication extends JApplet {
    	    		  centerPanel.updateUI();
        	      }
        	});
-       	
-       	//Bottom Panels with Interactive elements
-       	JPanel bottomPanel = new JPanel();
-       	JPanel bottom2Panel = new JPanel();
-       	bottomPanel.setLayout(new BorderLayout());
-       	bottom2Panel.setLayout(new BorderLayout());      	
-       	
-       	JPanel slidersPanel = new JPanel();
-       	slidersPanel.setLayout(new GridLayout(2,3));
-
-       	slidersPanel.add(xHoursSliderLabel);
-       	slidersPanel.add(xDaysSliderLabel);
-       	slidersPanel.add(rainOrSnowOrIceSliderLabel);
-       	slidersPanel.add(xHoursSlider);
-       	slidersPanel.add(xDaysSlider);
-       	slidersPanel.add(rainOrSnowOrIceSlider);
-        
-        add(getGraphs(), BorderLayout.CENTER);
-       	add(slidersPanel, BorderLayout.SOUTH);
-
     }
     public JPanel getGraphs() {
-
        	centerPanel.setLayout(new GridLayout(3,1));
     	
+       	//Temperature Thread/Panel Settings
     	Thread graphTemperaturesThread = new Thread(graphTemperaturesJPanel);
         graphTemperaturesThread.start();
         graphTemperaturesJPanel.setXSpacingPercentage(0.05);
@@ -252,7 +253,7 @@ public class WeatherApplication extends JApplet {
         graphTemperaturesJPanel.setGraphPoints(webScraper.getTemperatures());
         graphTemperaturesJPanel.setTitle("Hourly Temperature");
         
-        
+        //Humidity Thread/Panel Settings
         Thread graphHumiditiesThread = new Thread(graphHumiditiesJPanel);
         graphHumiditiesThread.start();
         graphHumiditiesJPanel.setXSpacingPercentage(0.05);
@@ -263,7 +264,7 @@ public class WeatherApplication extends JApplet {
         graphHumiditiesJPanel.setYAxisIncrements(20);
         graphHumiditiesJPanel.setTitle("Hourly Humidity");
         
-    	
+    	//Rain Thread/Panel Settings
     	Thread graphRainThread = new Thread(graphRainJPanel);
     	graphRainThread.start();
     	graphRainJPanel.setXSpacingPercentage(0.05);
@@ -274,6 +275,7 @@ public class WeatherApplication extends JApplet {
     	graphRainJPanel.setYAxisIncrements(20);
     	graphRainJPanel.setTitle("Hourly Chance of Rain");
     	
+    	//Snow Thread/Panel Settings
     	Thread graphSnowThread = new Thread(graphSnowJPanel);
     	graphSnowThread.start();
     	graphSnowJPanel.setXSpacingPercentage(0.05);
@@ -284,6 +286,7 @@ public class WeatherApplication extends JApplet {
     	graphSnowJPanel.setYAxisIncrements(20);
     	graphSnowJPanel.setTitle("Hourly Chance of Snow");
     	
+    	//Ice Thread/Panel Settings
     	Thread graphIceThread = new Thread(graphIceJPanel);
     	graphIceThread.start();
     	graphIceJPanel.setXSpacingPercentage(0.05);
